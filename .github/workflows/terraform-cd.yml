@@ -21,7 +21,7 @@ jobs:
         with:
           terraform_version: "1.5.7"
 
-      # 3. Menjalankan LocalStack dengan mengunci versi ke 2.1.0
+      # 3. Menjalankan LocalStack v2.1.0 via Docker Run
       - name: Start LocalStack (v2.1.0)
         run: |
           docker run -d --name localstack -p 4566:4566 localstack/localstack:2.1.0
@@ -32,9 +32,9 @@ jobs:
           done
           echo "LocalStack v2.1.0 telah siap!"
 
-      # 4. Inisialisasi Terraform
+      # 4. Inisialisasi Terraform (Sudah diperbaiki dari typo!)
       - name: Terraform Init
-        run: -backend=false
+        run: terraform init -backend=false
 
       # 5. Jalankan Terraform Apply
       - name: Terraform Apply
