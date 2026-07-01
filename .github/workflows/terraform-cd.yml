@@ -21,21 +21,21 @@ jobs:
         with:
           terraform_version: "1.5.7"
 
-      # 3. Menjalankan LocalStack v2.1.0 via Docker Run
+      # 3. Menjalankan LocalStack dengan Network Host agar port langsung terbuka penuh
       - name: Start LocalStack (v2.1.0)
         run: |
-          docker run -d --name localstack -p 4566:4566 localstack/localstack:2.1.0
+          docker run -d --name localstack --network=host localstack/localstack:2.1.0
           
           echo "Menunggu LocalStack v2.1.0 siap..."
           until curl -s http://localhost:4566/_localstack/health | grep -q '"s3": "available"\|"s3": "running"'; do
-            sleep 2
+            sleep 3
           done
-          echo "LocalStack v2.1.0 telah siap!"
+          echo "LocalStack v2.1.0 telah siap dan merespon!"
 
-      # 4. Inisialisasi Terraform (Sudah diperbaiki dari typo!)
+      # 4. Inisialisasi Terraform
       - name: Terraform Init
         run: terraform init -backend=false
 
-      # 5. Jalankan Terraform Apply
+      # 5. Jalankan Terraform Apply (Ditambahkan limit timeout agar tidak stuck selamanya jika ada anomali)
       - name: Terraform Apply
-        run: terraform apply -auto-approve -no-color
+        run: timeout 60s terraform apply -auto-approve -no-color
