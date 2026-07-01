@@ -10,15 +10,6 @@ jobs:
     name: "Terraform Apply"
     runs-on: ubuntu-latest
 
-    # Menjalankan LocalStack sebagai service container di dalam runner GitHub Actions
-    services:
-      localstack:
-        image: localstack/localstack:latest
-        ports:
-          - 4566:4566
-        env:
-          SERVICES: s3
-
     steps:
       # 1. Checkout kode dari branch main
       - name: Checkout Code
@@ -30,10 +21,21 @@ jobs:
         with:
           terraform_version: "1.5.7"
 
-      # 3. Inisialisasi Terraform
-      - name: Terraform Init
-        run: terraform init -backend=false
+      # 3. Menjalankan LocalStack dengan mengunci versi ke 2.1.0
+      - name: Start LocalStack (v2.1.0)
+        run: |
+          docker run -d --name localstack -p 4566:4566 localstack/localstack:2.1.0
+          
+          echo "Menunggu LocalStack v2.1.0 siap..."
+          until curl -s http://localhost:4566/_localstack/health | grep -q '"s3": "available"\|"s3": "running"'; do
+            sleep 2
+          done
+          echo "LocalStack v2.1.0 telah siap!"
 
-      # 4. Jalankan Terraform Apply tanpa intervensi manual (-auto-approve)
+      # 4. Inisialisasi Terraform
+      - name: Terraform Init
+        run: -backend=false
+
+      # 5. Jalankan Terraform Apply
       - name: Terraform Apply
         run: terraform apply -auto-approve -no-color
