@@ -1,0 +1,35 @@
+name: "Terraform CI"
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  terraform-ci:
+    name: "Terraform Lint and Validate"
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout kode dari repositori ke runner GitHub Actions
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Setup CLI Terraform di dalam runner
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7" # Menggunakan versi yang stabil
+
+      # 3. Cek apakah format kode sudah sesuai standar (HCL fmt)
+      # Jika ada kode yang berantakan, step ini akan gagal (fail)
+      - name: Terraform Format Check
+        run: terraform fmt -check
+
+      # 4. Inisialisasi Terraform (diperlukan sebelum melakukan validasi)
+      - name: Terraform Init
+        run: terraform init -backend=false
+
+      # 5. Validasi konfigurasi kode Terraform
+      - name: Terraform Validate
+        run: terraform validate
