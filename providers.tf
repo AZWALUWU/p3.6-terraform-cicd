@@ -16,7 +16,10 @@ provider "aws" {
   skip_metadata_api_check     = true
   skip_requesting_account_id  = true
 
-  # Mengarahkan AWS Provider ke LocalStack (berguna untuk testing lokal/CI tanpa biaya)
+  # Memaksa Terraform menggunakan path-style URL (http://localhost:4566/bucket-name)
+  # daripada virtual-hosted style (http://bucket-name.localhost:4566) yang sering memicu hang di CI
+  s3_use_path_style           = true
+
   endpoints {
     s3 = "http://localhost:4566"
   }

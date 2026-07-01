@@ -38,4 +38,4 @@ jobs:
 
       # 5. Jalankan Terraform Apply (Ditambahkan limit timeout agar tidak stuck selamanya jika ada anomali)
       - name: Terraform Apply
-        run: timeout 60s terraform apply -auto-approve -no-color
+        run: timeout 120s terraform apply -auto-approve -no-color
