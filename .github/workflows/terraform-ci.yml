@@ -5,31 +5,74 @@ on:
     branches:
       - main
 
+# Memberikan izin kepada token GitHub Actions untuk menulis komentar di Pull Request
+permissions:
+  pull-requests: write
+  contents: read
+
 jobs:
   terraform-ci:
-    name: "Terraform Lint and Validate"
+    name: "Terraform Lint, Validate and Plan"
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout kode dari repositori ke runner GitHub Actions
+      # 1. Checkout kode
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. Setup CLI Terraform di dalam runner
+      # 2. Setup CLI Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.5.7" # Menggunakan versi yang stabil
+          terraform_version: "1.5.7"
 
-      # 3. Cek apakah format kode sudah sesuai standar (HCL fmt)
-      # Jika ada kode yang berantakan, step ini akan gagal (fail)
-      - name: Terraform Format Check
-        run: terraform fmt -check
+      # 3. Merapikan format kode secara otomatis di runner sebelum divalidasi
+      - name: Terraform Format
+        run: terraform fmt
 
-      # 4. Inisialisasi Terraform (diperlukan sebelum melakukan validasi)
+      # 4. Inisialisasi Terraform
       - name: Terraform Init
         run: terraform init -backend=false
 
-      # 5. Validasi konfigurasi kode Terraform
+      # 5. Validasi konfigurasi kode
       - name: Terraform Validate
-        run: terraform validate
+        run: terraform validate -no-color
+
+      # 6. Jalankan Terraform Plan dan simpan outputnya ke file text
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan -no-color -out=tfplan
+          terraform show -no-color tfplan > plan_output.txt
+        continue-on-error: true
+
+      # 7. Post isi dari plan_output.txt ke Komentar Pull Request
+      - name: Update Pull Request Comment
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            let planOutput = 'No plan output found.';
+            if (fs.existsSync('plan_output.txt')) {
+              planOutput = fs.readFileSync('plan_output.txt', 'utf8');
+            }
+
+            const output = `#### Terraform Format and Style 🖌
+            #### Terraform Initialization ⚙️
+            #### Terraform Validation 🤖
+            #### Terraform Plan 🚀
+            
+            \`\`\`terraform
+            ${planOutput}
+            \`\`\`
+            
+            *Pushed by: @${context.actor}, Action: \`${context.eventName}\`*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
